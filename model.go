@@ -18,13 +18,13 @@ type Browser struct {
 
 //PageTiming detailed timing info about the page load.
 type PageTiming struct {
-	OnContentLoad int    `json:"onContentLoad,omitempty"`
-	OnLoad        int    `json:"onLoad,omitempty"`
-	Comment       string `json:"comment,omitempty"`
+	OnContentLoad float64 `json:"onContentLoad,omitempty"`
+	OnLoad        float64 `json:"onLoad,omitempty"`
+	Comment       string  `json:"comment,omitempty"`
 }
 
-//Pages list of all exported pages.
-type Pages struct {
+//Page list of all exported pages.
+type Page struct {
 	StartedDateTime string     `json:"startedDateTime"`
 	ID              string     `json:"id"`
 	Tite            string     `json:"title"`
@@ -92,23 +92,24 @@ type ResponseContent struct {
 	Size        int    `json:"size"`
 	Compression int    `json:"compression,omitempty"`
 	MimeType    string `json:"mimeType"`
-	Text        []byte `json:"text,omitempty"`
-	Emcoding    string `json:"encoding,omitempty"`
+	Text        string `json:"text,omitempty"`
+	Encoding    string `json:"encoding,omitempty"`
 	Comment     string `json:"comment,omitempty"`
 }
 
 //Response detailed info about the response.
 type Response struct {
-	Status      int             `json:"status"`
-	StatusText  string          `json:"statusText"`
-	HTTPVersion string          `json:"httpVersion"`
-	Cookies     []Cookie        `json:"cookies"`
-	Headers     []Header        `json:"headers"`
-	Content     ResponseContent `json:"content,omitempty"`
-	RedirectURL string          `json:"redirectURL"`
-	HeaderSize  int             `json:"headerSize"`
-	BodySize    int             `json:"bodySize"`
-	Comment     string          `json:"comment,omitempty"`
+	Status       int             `json:"status"`
+	StatusText   string          `json:"statusText"`
+	HTTPVersion  string          `json:"httpVersion"`
+	Cookies      []Cookie        `json:"cookies"`
+	Headers      []Header        `json:"headers"`
+	Content      ResponseContent `json:"content,omitempty"`
+	RedirectURL  string          `json:"redirectURL"`
+	HeaderSize   int             `json:"headerSize"`
+	BodySize     int             `json:"bodySize"`
+	TransferSize int             `json:"_transferSize,omitempty"`
+	Comment      string          `json:"comment,omitempty"`
 }
 
 //Cache info about the cache usage
@@ -138,17 +139,23 @@ type Timings struct {
 	Comment string `json:"comment,omitempty"`
 }
 
-//Entries list of all exported requests
-type Entries struct {
+//Initiator details on which element invoked the request.
+type Initiator struct {
+}
+
+//Entry list of all exported requests
+type Entry struct {
 	Pageref         string   `json:"pageref,omitempty"`
 	StartedDateTime string   `json:"startedDateTime"`
-	Time            int      `json:"time"`
+	Time            float32  `json:"time"`
 	Request         Request  `json:"request"`
 	Response        Response `json:"response"`
 	Cache           Cache    `json:"cache,omitempty"`
+	FromDiskCache   bool     `json:"_fromDiskCache,omitempty"`
 	Timings         Timings  `json:"timing"`
 	ServerIPAddress string   `json:"serverIPAddress"`
 	Connection      string   `json:"connection,omitempty"`
+	Priority        string   `json:"_priority,omitempty"`
 	Comment         string   `json:"comment,omitempty"`
 }
 
@@ -157,8 +164,8 @@ type Log struct {
 	Version string  `json:"version"`
 	Creator Creator `json:"creator"`
 	Browser Browser `json:"browser,omitempty"`
-	Pages   Pages   `json:"pages,omitempty"`
-	Entries Entries `json:"entires"`
+	Pages   []Page  `json:"pages,omitempty"`
+	Entries []Entry `json:"entries"`
 	Comment string  `json:"comment,omitempty"`
 }
 
