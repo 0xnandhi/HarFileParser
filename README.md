@@ -1,4 +1,4 @@
-# parse-har
+# HarFileParser
 Library to parse HAR file.
 
 Basic functionalities includes,
