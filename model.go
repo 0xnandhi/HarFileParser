@@ -1,5 +1,10 @@
 package harfileparser
 
+import (
+	"strconv"
+	"strings"
+)
+
 // defines the har model structure as per har spec 1.2
 
 //Creator Name and application of the log creator application.
@@ -52,6 +57,8 @@ type Params struct {
 type PostData struct {
 	MimeType string   `json:"mimeType"`
 	Params   []string `json:"params"`
+	Text     string   `json:"text,omitempty"`
+	Comment  string   `json:"comment,omitempty"`
 }
 
 //Header req / response header information
@@ -172,4 +179,116 @@ type Log struct {
 //HAR structure as per spec 1.2
 type HAR struct {
 	Log Log `json:"log"`
+}
+
+//EntriesCount list total number of entires
+func (l Log) EntriesCount() int {
+	return len(l.Entries)
+}
+
+//GetRequestUrls collects all request URLs from the parsed file and return an
+// array of urls.
+func (l Log) GetRequestUrls() []string {
+	urls := []string{}
+	for _, v := range l.Entries {
+		urls = append(urls, v.Request.URL)
+	}
+	return urls
+}
+
+//GetRedirectCounts returns an integer which displays the number of redirections
+//through the request
+func (l Log) GetRedirectCounts() int {
+	rCount := 0
+	for _, v := range l.Entries {
+		if v.Response.Status == 302 {
+			rCount++
+		}
+	}
+	return rCount
+}
+
+// EntriesToFlowText (Experimental feature) Convert the Har to a text flow. similar to wireshark, tcp flow
+// the structure resembles similar to tcp flow but not exactly replicates a network flow.
+// The main purpose of this to quickly use the text as an input to other engines for further processing.
+// e.g. could be URL classification engine.
+func (l Log) EntriesToFlowText() string {
+	var flow strings.Builder
+	var reqURL strings.Builder
+	var reqHeaders strings.Builder
+	var rspHeaders strings.Builder
+
+	// iterate over all the entries.
+	for _, entry := range l.Entries {
+
+		// Request URL structure
+		// Method <space> URL <space> <HTTP Version>\r\n
+		reqURL.WriteString(entry.Request.Method)
+		reqURL.WriteString(" ")
+		reqURL.WriteString(entry.Request.URL)
+		reqURL.WriteString(" ")
+		if strings.Contains(entry.Request.HTTPVersion, "h2") {
+			reqURL.WriteString("HTTP/2")
+			reqURL.WriteString("\r\n")
+		}
+
+		if strings.Contains(entry.Request.HTTPVersion, "http/") {
+			version := strings.ToUpper(entry.Request.HTTPVersion)
+			reqURL.WriteString(version)
+			reqURL.WriteString("\r\n")
+		}
+
+		// Request Headers of type <Key>:<space><value>\r\n
+		for _, header := range entry.Request.Headers {
+			reqHeaders.WriteString(header.Name)
+			reqHeaders.WriteString(": ")
+			reqHeaders.WriteString(header.Value)
+			reqHeaders.WriteString("\r\n")
+		}
+
+		//TODO: Post Data is not implemented. to be implemented
+
+		// check if the method is of type post / any post data is available.
+		reqHeaders.WriteString("\r\n")
+
+		rspHeaders.WriteString(strconv.Itoa(entry.Response.Status))
+		rspHeaders.WriteString(" ")
+		if entry.Response.StatusText == "" {
+			if entry.Response.Status == 200 {
+				entry.Response.StatusText = "OK"
+			}
+		}
+		rspHeaders.WriteString(entry.Response.StatusText)
+		rspHeaders.WriteString("\r\n")
+
+		// response Headers of type <Key>:<space><value>\r\n
+		for _, rheader := range entry.Response.Headers {
+			if rheader.Name == "status" {
+				continue
+			}
+			rspHeaders.WriteString(rheader.Name)
+			rspHeaders.WriteString(": ")
+			rspHeaders.WriteString(rheader.Value)
+			rspHeaders.WriteString("\r\n")
+		}
+
+		rspHeaders.WriteString("\r\n")
+
+		// write all details to the flow
+		flow.WriteString(reqURL.String())
+		flow.WriteString(reqHeaders.String())
+		flow.WriteString(rspHeaders.String())
+
+		if len(entry.Response.Content.Text) > 0 {
+			flow.WriteString(entry.Response.Content.Text)
+		}
+		flow.WriteString("\r\n")
+
+		reqURL.Reset()
+		reqHeaders.Reset()
+		rspHeaders.Reset()
+
+	}
+
+	return flow.String()
 }
